@@ -24,7 +24,6 @@ registers = {
 }
 mainMem = [0] * 1000
 
-
 def stallFetch(pipOut):
     nStart = 0
     clockcyle = 0
@@ -44,7 +43,6 @@ def stallFetch(pipOut):
         else:
             nStart = 0
     return nStart
-
 
 def stallDecode(pipOut, start):
     nStart = 0
@@ -69,7 +67,6 @@ def stallDecode(pipOut, start):
             nStart = 0
     return nStart
 
-
 def hazard(input, index, inputList):
     flagr1 = 0
     if input[2] == inputList[index - 2][1]:
@@ -77,7 +74,6 @@ def hazard(input, index, inputList):
     elif input[3] == inputList[index - 2][1]:
         flagr1 = 1
     return flagr1
-
 
 def pipline(input, index, inputList, pipOut):
     output = []
@@ -123,7 +119,6 @@ def pipline(input, index, inputList, pipOut):
         output.append("WB")
     return output
 
-
 def print_pipeline_output(pipOut):
     print("Pipline for these Instructions")
     # Find the maximum length of any pipeline stage to align columns
@@ -152,7 +147,6 @@ def print_pipeline_output(pipOut):
         print(f"{cycle_str} | {stages_str}")
     return seperatore
 
-
 def memoryHandle(input):
     if input[0] == "lw":
         address = registers[input[3]] + int(input[2][1:])
@@ -164,12 +158,10 @@ def memoryHandle(input):
         return 2
     return 0
 
-
 def memoryPrint(memory, sep):
     print(sep)
     print("Main Memory after execute these Instructions")
     print(memory)
-
 
 # execute function
 def execute_instruction(instruction):
@@ -178,37 +170,53 @@ def execute_instruction(instruction):
     src1 = instruction[2]
     src2 = instruction[3]
 
-    if opcode == "add":
-        registers[dest] = registers[src1] + registers[src2]
-    elif opcode == "sub":
-        registers[dest] = registers[src1] - registers[src2]
-    elif opcode == "mul":
-        registers[dest] = registers[src1] * registers[src2]
-    elif opcode == "div":
-        if registers[src2] != 0:
-            registers[dest] = registers[src1] // registers[src2]
-        else:
-            print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
-    elif opcode == "addi":
-        registers[dest] = registers[src1] + int(src2)
-    elif opcode == "subi":
-        registers[dest] = registers[src1] - int(src2)
-    elif opcode == "muli":
-        registers[dest] = registers[src1] * int(src2)
-    elif opcode == "divi":
-        if int(src2) != 0:
-            registers[dest] = registers[src1] // int(src2)
-        else:
-            print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+    if src2.startswith("#"):
+        immediate = int(src2[1:])
+        if opcode == "add":
+            registers[dest] = registers[src1] + immediate
+        elif opcode == "sub":
+            registers[dest] = registers[src1] - immediate
+        elif opcode == "mul":
+            registers[dest] = registers[src1] * immediate
+        elif opcode == "div":
+            if immediate != 0:
+                registers[dest] = registers[src1] // immediate
+            else:
+                print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+        elif opcode == "ori":
+            registers[dest] = registers[src1] | immediate
+    else:
+        if opcode == "add":
+            registers[dest] = registers[src1] + registers[src2]
+        elif opcode == "sub":
+            registers[dest] = registers[src1] - registers[src2]
+        elif opcode == "mul":
+            registers[dest] = registers[src1] * registers[src2]
+        elif opcode == "div":
+            if registers[src2] != 0:
+                registers[dest] = registers[src1] // registers[src2]
+            else:
+                print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+        elif opcode == "addi":
+            registers[dest] = registers[src1] + int(src2)
+        elif opcode == "subi":
+            registers[dest] = registers[src1] - int(src2)
+        elif opcode == "muli":
+            registers[dest] = registers[src1] * int(src2)
+        elif opcode == "divi":
+            if int(src2) != 0:
+                registers[dest] = registers[src1] // int(src2)
+            else:
+                print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+        elif opcode == "ori":
+            registers[dest] = registers[src1] | int(src2)
     return 1
-
 
 def print_register_values():
     print(sep)
     print("register values after execute these Instructions")
     for reg, val in registers.items():
         print(f"{reg}: {val}")
-
 
 # file path
 file_path = "C:\\Users\\beta\\Downloads\\pp.txt"
