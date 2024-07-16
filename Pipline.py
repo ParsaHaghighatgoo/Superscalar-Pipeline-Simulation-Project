@@ -3,7 +3,7 @@ from colorama import init, Fore, Style
 # Initialize colorama
 init()
 
-# Define the initial register values and main mem
+# Define the initial register values and main memory
 registers = {
     "$s0": -10,
     "$s1": -10,
@@ -24,6 +24,7 @@ registers = {
 }
 mainMem = [0] * 1000
 
+
 def stallFetch(pipOut):
     nStart = 0
     clockcyle = 0
@@ -43,6 +44,7 @@ def stallFetch(pipOut):
         else:
             nStart = 0
     return nStart
+
 
 def stallDecode(pipOut, start):
     nStart = 0
@@ -67,6 +69,7 @@ def stallDecode(pipOut, start):
             nStart = 0
     return nStart
 
+
 def hazard(input, index, inputList):
     flagr1 = 0
     if input[2] == inputList[index - 2][1]:
@@ -74,6 +77,7 @@ def hazard(input, index, inputList):
     elif input[3] == inputList[index - 2][1]:
         flagr1 = 1
     return flagr1
+
 
 def pipline(input, index, inputList, pipOut):
     output = []
@@ -119,8 +123,9 @@ def pipline(input, index, inputList, pipOut):
         output.append("WB")
     return output
 
+
 def print_pipeline_output(pipOut):
-    print("Pipline for these Instructions")
+    print("Pipeline for these Instructions")
     # Find the maximum length of any pipeline stage to align columns
     max_length = max(len(pip) for pip in pipOut)
 
@@ -135,17 +140,18 @@ def print_pipeline_output(pipOut):
     }
 
     # Print header
-    header = "Cycle".ljust(6) + " | " + " | ".join([f"Stage {i + 1}".ljust(4) for i in range(max_length)])
+    header = "Cycle".ljust(6) + "\t|\t" + "\t|\t".join([f"Stage {i + 1}".ljust(4) for i in range(max_length)])
     print(header)
     print("-" * len(header))
-    seperatore = "-" * len(header)
+    separator = "-" * len(header)
 
     # Print each pipeline stage
     for i, pip in enumerate(pipOut, start=1):
         cycle_str = str(i).ljust(6)
-        stages_str = " | ".join([color_map.get(stage, "") + stage.ljust(4) + Style.RESET_ALL for stage in pip])
+        stages_str = "\t|\t".join([color_map.get(stage, "") + stage.ljust(4) + Style.RESET_ALL for stage in pip])
         print(f"{cycle_str} | {stages_str}")
-    return seperatore
+    return separator
+
 
 def memoryHandle(input):
     if input[0] == "lw":
@@ -158,12 +164,16 @@ def memoryHandle(input):
         return 2
     return 0
 
+
 def memoryPrint(memory, sep):
     print(sep)
-    print("Main Memory after execute these Instructions")
+    print()
+    print("Main Memory after executing these Instructions")
     print(memory)
+    print()
 
-# execute function
+
+# Execute function
 def execute_instruction(instruction):
     opcode = instruction[0]
     dest = instruction[1]
@@ -212,13 +222,25 @@ def execute_instruction(instruction):
             registers[dest] = registers[src1] | int(src2)
     return 1
 
-def print_register_values():
-    print(sep)
-    print("register values after execute these Instructions")
-    for reg, val in registers.items():
-        print(f"{reg}: {val}")
 
-# file path
+def print_register_values(register_history):
+    print(sep)
+    print()
+    print("Register values after executing each instruction")
+    print()
+
+    headers = ["Register"] + [f"Instr {i + 1}" for i in range(len(register_history))]
+    header_row = "\t|\t".join(headers)
+    print(Fore.YELLOW + header_row + Style.RESET_ALL)
+    print(Fore.YELLOW + "-" * len(header_row) + Style.RESET_ALL)
+
+    for reg in registers.keys():
+        row = [Fore.CYAN + reg + Style.RESET_ALL] + [str(registers_after_exec[reg]) for registers_after_exec in
+                                                     register_history]
+        print("\t|\t".join(row))
+
+
+# File path
 file_path = "C:\\Users\\beta\\Downloads\\pp.txt"
 
 # Open file for reading
@@ -236,12 +258,15 @@ for line in lines:
     listCons = [ins, args[0], args[1], args[2]]
     inputList.append(listCons)
 
+register_history = []
+
 for instruction in inputList:
     index = inputList.index(instruction) + 1
     output = pipline(instruction, index, inputList, pipOut)
     pipOut.append(output)
     memSetFlag = memoryHandle(instruction)
     regSetFlag = execute_instruction(instruction)
+    register_history.append(registers.copy())  # Store a copy of register values after each instruction
 
 # Print the pipeline output beautifully
 sep = print_pipeline_output(pipOut)
@@ -249,5 +274,5 @@ sep = print_pipeline_output(pipOut)
 # Print the main memory
 memoryPrint(mainMem, sep)
 
-# Print final register values
-print_register_values()
+# Print final register values after each instruction
+print_register_values(register_history)
