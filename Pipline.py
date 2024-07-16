@@ -3,8 +3,9 @@ from colorama import init, Fore, Style
 # Initialize colorama
 init()
 
-# Define the initial register values
+# Define the initial register values and main mem
 registers = {
+    "$s0": -10,
     "$s1": -10,
     "$s2": -10,
     "$s3": -10,
@@ -12,8 +13,16 @@ registers = {
     "$s5": -10,
     "$s6": -10,
     "$s7": -10,
-    "$t4": -10
+    "$t0": -10,
+    "$t1": -10,
+    "$t2": -10,
+    "$t3": -10,
+    "$t4": -10,
+    "$t5": -10,
+    "$t6": -10,
+    "$t7": -10
 }
+mainMem = [0] * 1000
 
 
 def stallFetch(pipOut):
@@ -115,23 +124,8 @@ def pipline(input, index, inputList, pipOut):
     return output
 
 
-def execute_instruction(instruction):
-    global registers
-    op, args = instruction[0], instruction[1:]
-    if op == "sub":
-        test = registers[args[1]]
-        test2 = registers[args[2]]
-        registers[args[0]] = registers[args[1]] - registers[args[2]]
-    elif op == "ori":
-        registers[args[0]] = registers[args[1]] | int(args[2].replace("#", ""))
-    elif op == "lw":
-        # Simulating a memory read, using args[2] as base register and immediate offset
-        registers[args[0]] = registers[args[2]] + int(args[1].replace("#", ""))
-    elif op == "add":
-        registers[args[0]] = registers[args[1]] + registers[args[2]]
-
-
 def print_pipeline_output(pipOut):
+    print("Pipline for these Instructions")
     # Find the maximum length of any pipeline stage to align columns
     max_length = max(len(pip) for pip in pipOut)
 
@@ -149,16 +143,69 @@ def print_pipeline_output(pipOut):
     header = "Cycle".ljust(6) + " | " + " | ".join([f"Stage {i + 1}".ljust(4) for i in range(max_length)])
     print(header)
     print("-" * len(header))
+    seperatore = "-" * len(header)
 
     # Print each pipeline stage
     for i, pip in enumerate(pipOut, start=1):
         cycle_str = str(i).ljust(6)
         stages_str = " | ".join([color_map.get(stage, "") + stage.ljust(4) + Style.RESET_ALL for stage in pip])
         print(f"{cycle_str} | {stages_str}")
+    return seperatore
+
+
+def memoryHandle(input):
+    if input[0] == "lw":
+        address = registers[input[3]] + int(input[2][1:])
+        registers[input[1]] = mainMem[address]
+        return 1
+    elif input[0] == "sw":
+        address = registers[input[3]] + int(input[2][1:])
+        mainMem[address] = registers[input[1]]
+        return 2
+    return 0
+
+
+def memoryPrint(memory, sep):
+    print(sep)
+    print("Main Memory after execute these Instructions")
+    print(memory)
+
+
+# execute function
+def execute_instruction(instruction):
+    opcode = instruction[0]
+    dest = instruction[1]
+    src1 = instruction[2]
+    src2 = instruction[3]
+
+    if opcode == "add":
+        registers[dest] = registers[src1] + registers[src2]
+    elif opcode == "sub":
+        registers[dest] = registers[src1] - registers[src2]
+    elif opcode == "mul":
+        registers[dest] = registers[src1] * registers[src2]
+    elif opcode == "div":
+        if registers[src2] != 0:
+            registers[dest] = registers[src1] // registers[src2]
+        else:
+            print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+    elif opcode == "addi":
+        registers[dest] = registers[src1] + int(src2)
+    elif opcode == "subi":
+        registers[dest] = registers[src1] - int(src2)
+    elif opcode == "muli":
+        registers[dest] = registers[src1] * int(src2)
+    elif opcode == "divi":
+        if int(src2) != 0:
+            registers[dest] = registers[src1] // int(src2)
+        else:
+            print(Fore.RED + "Error: Division by zero" + Style.RESET_ALL)
+    return 1
 
 
 def print_register_values():
-    print("\nFinal Register Values:")
+    print(sep)
+    print("register values after execute these Instructions")
     for reg, val in registers.items():
         print(f"{reg}: {val}")
 
@@ -181,14 +228,18 @@ for line in lines:
     listCons = [ins, args[0], args[1], args[2]]
     inputList.append(listCons)
 
-for i in inputList:
-    index = inputList.index(i) + 1
-    output = pipline(i, index, inputList, pipOut)
+for instruction in inputList:
+    index = inputList.index(instruction) + 1
+    output = pipline(instruction, index, inputList, pipOut)
     pipOut.append(output)
-    execute_instruction(i)
+    memSetFlag = memoryHandle(instruction)
+    regSetFlag = execute_instruction(instruction)
 
 # Print the pipeline output beautifully
-print_pipeline_output(pipOut)
+sep = print_pipeline_output(pipOut)
+
+# Print the main memory
+memoryPrint(mainMem, sep)
 
 # Print final register values
-# print_register_values()
+print_register_values()
